@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "libsodium-wrappers": "^0.7.15",
+    "sql.js": "^1.13.0"
+  }
+}

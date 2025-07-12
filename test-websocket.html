@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste WebSocket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f1419;
+            color: #e6e6e6;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .connected { background: #48bb78; }
+        .disconnected { background: #e53e3e; }
+        .connecting { background: #ed8936; }
+        .log {
+            background: #1a1f2e;
+            border: 1px solid #2d3748;
+            border-radius: 8px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #3182ce; }
+        button:disabled { background: #4a5568; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste WebSocket</h1>
+    
+    <div id="status" class="status disconnected">🔴 Desconectado</div>
+    
+    <div>
+        <button onclick="connect()" id="connectBtn">Conectar</button>
+        <button onclick="disconnect()" id="disconnectBtn" disabled>Desconectar</button>
+        <button onclick="clearLog()">Limpar Log</button>
+    </div>
+    
+    <h3>Log de Eventos:</h3>
+    <div id="log" class="log"></div>
+    
+    <script>
+        let ws = null;
+        let userId = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus(status, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = status;
+            statusDiv.className = `status ${className}`;
+        }
+        
+        function connect() {
+            log('🔌 Tentando conectar...');
+            updateStatus('🟡 Conectando...', 'connecting');
+            
+            ws = new WebSocket('ws://localhost:8080/ws');
+            
+            ws.onopen = function(event) {
+                log('✅ WebSocket conectado!');
+                updateStatus('🟢 Conectado', 'connected');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+            };
+            
+            ws.onmessage = function(event) {
+                log(`📨 Mensagem recebida: ${event.data}`);
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'user_id') {
+                        userId = data.user_id;
+                        log(`👤 ID do usuário: ${userId}`);
+                    }
+                } catch (error) {
+                    log(`❌ Erro ao parsear mensagem: ${error}`);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                log(`❌ WebSocket desconectado: ${event.code} - ${event.reason}`);
+                updateStatus('🔴 Desconectado', 'disconnected');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                ws = null;
+            };
+            
+            ws.onerror = function(error) {
+                log(`❌ Erro WebSocket: ${error}`);
+            };
+        }
+        
+        function disconnect() {
+            if (ws) {
+                log('🔌 Desconectando...');
+                ws.close();
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // Auto-conectar ao carregar a página
+        window.onload = function() {
+            log('🚀 Página carregada, iniciando teste...');
+            setTimeout(connect, 1000);
+        };
+    </script>
+</body>
+</html> 
